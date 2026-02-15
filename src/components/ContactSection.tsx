@@ -1,27 +1,42 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Phone, Mail, Facebook, Send } from "lucide-react";
+import { MapPin, Phone, Mail, Facebook, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const ContactSection = () => {
   const { toast } = useToast();
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.subject || !form.message) {
       toast({ title: "সকল তথ্য পূরণ করুন", variant: "destructive" });
       return;
     }
 
-    const body = `নাম: ${form.name}%0Aইমেইল: ${form.email}%0A%0A${form.message}`;
-    window.location.href = `mailto:alshamsaraf@gmail.com?subject=${encodeURIComponent(form.subject)}&body=${body}`;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-contact-message", {
+        body: form,
+      });
 
-    toast({ title: "ইমেইল ক্লায়েন্ট খোলা হচ্ছে..." });
-    setForm({ name: "", email: "", subject: "", message: "" });
+      if (error) throw error;
+
+      setSubmitted(true);
+      setForm({ name: "", email: "", subject: "", message: "" });
+      toast({ title: "মেসেজ সফলভাবে পাঠানো হয়েছে!" });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "মেসেজ পাঠাতে সমস্যা হয়েছে, আবার চেষ্টা করুন।", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
@@ -44,35 +59,51 @@ const ContactSection = () => {
 
         <div className="grid md:grid-cols-2 gap-10">
           {/* Form */}
-          <motion.form
-            onSubmit={handleSubmit}
+          <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="bg-card rounded-xl border border-border p-8 shadow-sm space-y-5"
+            className="bg-card rounded-xl border border-border p-8 shadow-sm"
           >
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">আপনার নাম</label>
-              <Input placeholder="নাম লিখুন" value={form.name} onChange={(e) => update("name", e.target.value)} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">ইমেইল</label>
-              <Input type="email" placeholder="example@email.com" value={form.email} onChange={(e) => update("email", e.target.value)} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">বিষয়</label>
-              <Input placeholder="বিষয় লিখুন" value={form.subject} onChange={(e) => update("subject", e.target.value)} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">মেসেজ</label>
-              <Textarea placeholder="আপনার মেসেজ লিখুন..." rows={4} value={form.message} onChange={(e) => update("message", e.target.value)} />
-            </div>
-            <Button type="submit" className="w-full text-base font-semibold" size="lg">
-              <Send className="h-4 w-4 mr-2" />
-              মেসেজ পাঠান
-            </Button>
-          </motion.form>
+            {submitted ? (
+              <div className="flex flex-col items-center justify-center text-center py-12 space-y-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Send className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">ধন্যবাদ!</h3>
+                <p className="text-muted-foreground max-w-sm">
+                  আপনার মেসেজ সফলভাবে পাঠানো হয়েছে। আমরা শীঘ্রই আপনার সাথে যোগাযোগ করবো।
+                </p>
+                <Button variant="outline" onClick={() => setSubmitted(false)} className="mt-4">
+                  আরেকটি মেসেজ পাঠান
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">আপনার নাম</label>
+                  <Input placeholder="নাম লিখুন" value={form.name} onChange={(e) => update("name", e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">ইমেইল</label>
+                  <Input type="email" placeholder="example@email.com" value={form.email} onChange={(e) => update("email", e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">বিষয়</label>
+                  <Input placeholder="বিষয় লিখুন" value={form.subject} onChange={(e) => update("subject", e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">মেসেজ</label>
+                  <Textarea placeholder="আপনার মেসেজ লিখুন..." rows={4} value={form.message} onChange={(e) => update("message", e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full text-base font-semibold" size="lg" disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                  {loading ? "পাঠানো হচ্ছে..." : "মেসেজ পাঠান"}
+                </Button>
+              </form>
+            )}
+          </motion.div>
 
           {/* Info */}
           <motion.div
