@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowDown, Phone } from "lucide-react";
+import { Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const HeroSection = () => {
@@ -71,14 +71,6 @@ const HeroSection = () => {
           </Button>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 1 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2"
-        >
-          <ArrowDown className="h-6 w-6 text-muted-foreground" />
-        </motion.div>
       </div>
     </section>
   );
