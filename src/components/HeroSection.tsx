@@ -77,7 +77,7 @@ const HeroSection = () => {
           transition={{ delay: 1.2, duration: 1 }}
           className="absolute bottom-10 left-1/2 -translate-x-1/2"
         >
-          <ArrowDown className="h-6 w-6 text-muted-foreground animate-bounce" />
+          <ArrowDown className="h-6 w-6 text-muted-foreground" />
         </motion.div>
       </div>
     </section>
